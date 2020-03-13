@@ -1,0 +1,271 @@
+'Axis 1 = Head pitch
+'Axis 2 = Head yaw
+'Axis 3 = Z Axis
+
+#define Axis1_HomeCnt_Min 117
+#define Axis1_HomeCnt_Max 121
+#define Axis2_HomeCnt_Min 127
+#define Axis2_HomeCnt_Max 132
+#define HomeSearch_Max_TrialCnt 5
+
+Wait(2000) 'Wait for device boot
+
+Print("Script start")
+
+Dim Axis_1_Enc As Integer 'Axis1 Encoder Counter
+Dim Axis_2_Enc As Integer 'Axis2 Encoder Counter
+Dim HomeSearch_Cnt As Integer 'Counter of HomeSearch trial
+Dim HomeSearchFlag[4] As Boolean 'Each Axis Home Success check
+
+gosub Variable_Initialize
+gosub Communication_Initialize
+
+'First HomeSearch excute
+gosub Axis1_HomeSearch
+gosub Axis2_HomeSearch
+
+While True
+	Axis_1_Enc = GetValue(_SENCNTR, 1)
+	Axis_2_Enc = GetValue(_SENCNTR, 2)
+
+	If HomeSearchFlag[1] = false Then
+		If (Axis_1_Enc <= Axis1_HomeCnt_Min Or Axis_1_Enc >= Axis1_HomeCnt_Max) Then
+			Print("Axis1 Home Search Retry \r")
+			Print(Axis_1_Enc,"\n")
+			gosub Axis1_HomeSearch
+			HomeSearch_Cnt++
+		Else	
+			Print("Axis1 Home Search Success \n")
+			HomeSearchFlag[1] = true
+			HomeSearch_Cnt = 0
+		End If
+	End If
+
+	If (HomeSearchFlag[1] = true And HomeSearchFlag[2] = false) Then
+		If (Axis_2_Enc <= Axis2_HomeCnt_Min Or Axis_2_Enc >= Axis2_HomeCnt_Max) Then
+			Print("Axis2 Home Search Retry \r")
+			Print(Axis_2_Enc,"\n")
+			gosub Axis2_HomeSearch
+			HomeSearch_Cnt++
+		Else
+			Print("Axis2 Home Search Success \n")
+			HomeSearchFlag[2] = true
+			HomeSearch_Cnt = 0
+			SetCommand(_B, 1, 1)
+			Exit while
+		End If
+	End If
+	
+	If (HomeSearch_Cnt = HomeSearch_Max_TrialCnt) Then
+		Print("HomeSerach Fail \n")
+		Print("Check the robot condition and robot surrounding \n")
+		Print("HomeSearch Result \n")
+		Print("Axis1 / Axis2 / Axis3 \n")
+		Print(HomeSearchFlag[1]," / ",HomeSearchFlag[2]," / ",HomeSearchFlag[3], "\n")
+		SetCommand(_B, 1, 0)
+		Exit while
+	End If
+End while
+
+Print("Script finish")
+
+'Main'
+''''''''''''''''''''Feedback''''''''''''''''''''
+
+Axis_Feedback:
+	print("F1")						 'Cam
+	print(":",getvalue(_VOLTS, 2))   'Read Volts
+	print(":",getvalue(_TEMP, 1))    'Read Temperature
+	print(":",getvalue(_FLTFLAG, 1)) 'Read Fault Flags (Emergency Stop)
+	print(":",getvalue(_ABSPEED, 1)) 'Read Encoder Motor Speed in RPM
+	print(":",getvalue(_ABSPEED, 2))
+	print(":",getvalue(_ABCNTR, 1))  'Read Encoder Count Absolute
+	print(":",getvalue(_ABCNTR, 2))
+	print(":",getvalue(_BATAMPS, 1)) 'Read Battery Amps
+	print(":",getvalue(_BATAMPS, 2))
+	print(":","\r")
+	
+	print("F2")							'Torso
+	print(":",volts)                  	'Read Volts
+	print(":",temp)                   	'Read Temperature
+	print(":",1) 						'Read Fault Flags (Emergency Stop)
+	print(":",speed01)                	'Read Encoder Motor Speed in RPM
+	print(":",0)
+	print(":",1) 						'Read Encoder Count Absolute
+	print(":",0)
+	print(":",amps0)                 	'Read Battery Amps
+	print(":",0)
+	print(":","\r")
+	
+	wait(10)
+goto Axis_Feedback
+
+
+
+'''''''''''''''Variable Initialize'''''''''''''''
+	Variable_Initialize:		
+		Axis_1_Enc=0
+		Axis_2_Enc=0
+		HomeSearch_Cnt =0
+		
+		HomeSearchFlag[0] = false
+		HomeSearchFlag[1] = false
+		HomeSearchFlag[2] = false
+		HOmeSearchFlag[3] = false
+	Return 'Return Variable_Initialize
+
+'''''''''''''Communication Initialize'''''''''''''
+
+	Communication_Initialize:
+		'MicroBasic Auto Start
+		SetConfig(_BRUN, 1)  
+		
+		'Enables CAN and selects the CAN protocol (4: RoboCAN)
+		SetConfig(_CEN, 4)   
+		
+		'Stores the product’s address on the CAN bus
+		SetConfig(_CNOD, 1)  
+		
+		'Set the CAN bus bit rate (3: 250K)
+		
+		SetConfig(_CBR, 3)
+		
+		'Disable the echo on the serial
+		SetConfig(_ECHOF, 1) 
+		
+		'Set the Serial Commands watchdog timeout parameter (500ms)
+		SetConfig(_RWD, 500)
+	Return 'Return Communication_Initialize
+
+''''''''''''''Axis 1 Parameter Set and Homesearch''''''''''''''
+
+	Axis1_HomeSearch:
+	
+		'Set the operating mode
+		'0: Open-loop 
+		'1: Closed-loop speed 
+		'2: Closed-loop position relative 
+		'3: Closed-loop count position 
+		'4: Closed-loop position tracking 
+		'5: Closed-loop torque 
+		'6: Closed-loop speed position
+		
+		SetConfig(_MMOD, 1, 0)
+		
+		'Set the motor direction
+		SetConfig(_MDIR, 1, 0)
+		
+		'Set the Max RPM
+		SetConfig(_MXRPM, 1, 20)
+		
+		'Set the Move Velocity
+		SetConfig(_MVEL, 1, 5)
+		
+		'Set the rate of speed change during acceleration (rpm/s * 10)
+		SetConfig(_MAC, 1, 100)
+		
+		'Set the rate of speed change during deceleration (rpm/s * 10)
+		SetConfig(_MDEC, 1, 100)
+		
+		'Set the Encoder
+		setconfig(_EMOD, 1, 18)
+		setconfig(_EPPR, 1, 540)
+		
+		setconfig(_ELL, 1, 0)
+		setconfig(_EHL, 1, 238)
+		
+		'Set the Max Amps (Amps * 10)
+		setconfig(_ALIM, 1, 100)
+		
+		Wait(100)
+		
+		i = 0
+		
+		'Axis1 Move until -Limit
+		While i<400000
+			SetCommand(_GO, 1, -230)
+			i ++
+		End While
+		
+		Wait(100)
+		
+		'Set Encoder Counter
+		SetCommand(_SENCNTR, 1, 0)
+		
+		Wait(100)
+		
+		'Set Close loop PID gain
+		SetConfig(_KP, 1, 1000000 * 1)
+		SetConfig(_KI, 1, 1000000 * 0)
+		SetConfig(_KD, 1, 1000000 * 0)
+		
+		Wait(100)
+		
+		'Change Mode(Closeloop relative position mode) & Move to Origin
+		SetConfig(_MMOD, 1, 2)
+		Wait(1000)
+
+	Return 'Return Axis1_HomeSearch
+			
+''''''''''''''Axis 2 Parameter Set and Homesearch''''''''''''''
+
+	Axis2_HomeSearch: 
+
+		'''''''''Axis2 Initialize''''''''' 
+		
+		setconfig(_EMOD, 2, 34)
+		setconfig(_EPPR, 2, 1200)
+		
+		setconfig(_ELL, 2, 0)
+		setconfig(_EHL, 2, 258)
+		
+		setconfig(_ALIM, 2, 50)
+		
+		'Openloop
+		SetConfig(_MMOD, 2, 0)
+		
+		'Motor Direction
+		SetConfig(_MDIR, 2, 1)
+		
+		SetConfig(_MXRPM, 2, 100)
+		
+		SetConfig(_MVEL, 2, 100)
+		SetConfig(_ACCEL, 2, 100)
+		SetConfig(_MAC, 2, 1000)
+		SetConfig(_DECEL, 2, 1000)
+		SetConfig(_MDEC, 2, 1000)
+		Wait(100)
+		
+		'Axis2 Moving until -Limit
+		i = 0
+		
+		While i<400000
+			SetCommand(_GO, 2, -500)
+			i ++
+		End While
+		
+		Wait(100)
+		
+		'Encoder Initialize
+		SetCommand(_SENCNTR, 2, 0)
+		
+		Wait(100)
+		
+		SetConfig(_KP, 2, 1000000 * 1)
+		SetConfig(_KI, 2, 1000000 * 1)
+		SetConfig(_KD, 2, 1000000 * 1)
+		
+		Wait(100)
+		
+		'Set Normal Move Velocity
+		SetConfig(_MXRPM, 2, 3)
+		SetConfig(_MVEL, 2, 3)
+		SetConfig(_ACCEL, 2, 60)
+		SetConfig(_MAC, 2, 60)
+		SetConfig(_DECEL, 2, 60)
+		SetConfig(_MDEC, 2, 60)
+		
+		'Change Mode & Move to Origin
+		SetConfig(_MMOD, 2, 2)
+		Wait(1000)
+	Return 'Return Axis2_HomeSearch
