@@ -73,31 +73,54 @@ Print("Script finish")
 ''''''''''''''''''''Feedback''''''''''''''''''''
 
 Axis_Feedback:
-	print("F1")						 'Cam
-	print(":",getvalue(_VOLTS, 2))   'Read Volts
-	print(":",getvalue(_TEMP, 1))    'Read Temperature
-	print(":",getvalue(_FLTFLAG, 1)) 'Read Fault Flags (Emergency Stop)
-	print(":",getvalue(_ABSPEED, 1)) 'Read Encoder Motor Speed in RPM
+	print("F1")						 	'Cam
+	print(":",getvalue(_VOLTS, 2))   	'Read Volts
+	print(":",getvalue(_TEMP, 1))    	'Read Temperature
+	print(":",getvalue(_FLTFLAG, 1)) 	'Read Fault Flags (Emergency Stop)
+	print(":",getvalue(_ABSPEED, 1)) 	'Read Encoder Motor Speed in RPM
 	print(":",getvalue(_ABSPEED, 2))
-	print(":",getvalue(_ABCNTR, 1))  'Read Encoder Count Absolute
+	print(":",getvalue(_ABCNTR, 1))  	'Read Encoder Count Absolute
 	print(":",getvalue(_ABCNTR, 2))
-	print(":",getvalue(_BATAMPS, 1)) 'Read Battery Amps
+	print(":",getvalue(_BATAMPS, 1)) 	'Read Battery Amps
 	print(":",getvalue(_BATAMPS, 2))
+	print(":",getvalue(_DIN, 3))	 	'Read Z-Axis POT
+	print(":",getvalue(_DIN, 4))	 	'Read Z-Axis NOT
 	print(":","\r")
-	
-	print("F2")							'Torso
-	print(":",volts)                  	'Read Volts
-	print(":",temp)                   	'Read Temperature
-	print(":",1) 						'Read Fault Flags (Emergency Stop)
-	print(":",speed01)                	'Read Encoder Motor Speed in RPM
-	print(":",0)
-	print(":",1) 						'Read Encoder Count Absolute
-	print(":",0)
-	print(":",amps0)                 	'Read Battery Amps
-	print(":",0)
-	print(":","\r")
-	
+
+	''torso feedback set''
+    	ScanCANValue(2, _VOLTS, 2, 5, 0)	'Read Battery Volts
+	ScanCANValue(2, _TEMP, 1, 5, 1)		'Read MCU temperature
 	wait(10)
+	ScanCANValue(2, _FLTFLAG, 1, 5, 2)	'Read Fault Flags	
+	ScanCANValue(2, _ABSPEED, 1, 5, 3)	'Read Encoder Motor Speed in RPM
+	wait(10)
+	ScanCANValue(2, _ABCNTR, 1, 5, 4)	'Read Encoder Count Absolute
+	ScanCANValue(2, _BATAMPS, 1, 5, 5)	'Read Battery Amps
+	wait(10)
+	ScanCANValue(2, _DIN, 3, 5, 6)		'Read Yaw POT
+	ScanCANValue(2, _DIN, 4, 5, 7)		'Read Yaw NOT
+	wait(10)
+	ScanCANValue(2, _DIN, 5, 5, 8)		'Read Pitch POT
+	ScanCANValue(2, _DIN, 6, 5, 9)		'Read Pitch NOT	
+	wait(10)
+	
+	print("F2")							'torso
+	print(":", ReadScannedCANValue(0))
+	print(":", ReadScannedCANValue(1))
+	print(":", ReadScannedCANValue(2))
+	print(":", ReadScannedCANValue(3))
+	print(":", 0)						'dummy
+	print(":", ReadScannedCANValue(4))
+	print(":", 0)						'dummy
+	print(":", ReadScannedCANValue(5))
+	print(":", 0)						'dummy
+	print(":", ReadScannedCANValue(6))
+	print(":", ReadScannedCANValue(7))
+	print(":", ReadScannedCANValue(8))
+	print(":", ReadScannedCANValue(9))
+	print("\r")
+	wait(10)
+	
 goto Axis_Feedback
 
 
@@ -269,3 +292,4 @@ goto Axis_Feedback
 		SetConfig(_MMOD, 2, 2)
 		Wait(1000)
 	Return 'Return Axis2_HomeSearch
+
