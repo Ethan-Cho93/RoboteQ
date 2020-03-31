@@ -16,6 +16,7 @@ Dim Axis_1_Enc As Integer 'Axis1 Encoder Counter
 Dim Axis_2_Enc As Integer 'Axis2 Encoder Counter
 Dim HomeSearch_Cnt As Integer 'Counter of HomeSearch trial
 Dim HomeSearchFlag[4] As Boolean 'Each Axis Home Success check
+Dim RosFlag As Boolean 'after all axis Home success, ros message will be publish 
 
 gosub Variable_Initialize
 gosub Communication_Initialize
@@ -67,15 +68,24 @@ While True
 	End If
 End while
 
+'After all axis Home success, ros message will be publish
+If (HomeSearchFlag[1] = true And HomeSearchFlag[2] = true) Then
+	RosFlag = true	
+Else
+ 	RosFlag = false
+End If
+
 Print("Script finish")
+
 
 'Main'
 ''''''''''''''''''''Feedback''''''''''''''''''''
 
 Axis_Feedback:
-	print("F1")						 	'Cam
+	print("F0")						 	'Cam
 	print(":",getvalue(_VOLTS, 2))   	'Read Volts
 	print(":",getvalue(_TEMP, 1))    	'Read Temperature
+	print(":",RosFlag)
 	print(":",getvalue(_FLTFLAG, 1)) 	'Read Fault Flags (Emergency Stop)
 	print(":",getvalue(_ABSPEED, 1)) 	'Read Encoder Motor Speed in RPM
 	print(":",getvalue(_ABSPEED, 2))
@@ -104,9 +114,10 @@ Axis_Feedback:
 	ScanCANValue(2, _DIN, 6, 5, 9)		'Read Pitch NOT	
 	wait(10)
 	
-	print("F2")							'torso
+	print("F1")							'torso
 	print(":", ReadScannedCANValue(0))
 	print(":", ReadScannedCANValue(1))
+	print(":", 1)						'dummy	
 	print(":", ReadScannedCANValue(2))
 	print(":", ReadScannedCANValue(3))
 	print(":", 0)						'dummy
